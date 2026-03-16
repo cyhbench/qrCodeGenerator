@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QR Code Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #0f0f23;
+}
+
+header {
+  background: #1a1a2e;
+  color: #eee;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+header h1 { font-size: 18px; font-weight: 600; }
+
+.input-area {
+  padding: 16px;
+  flex-shrink: 0;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  outline: none;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.5;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  transition: border-color 0.2s;
+}
+
+textarea:focus { border-color: #4fc3f7; }
+textarea::placeholder { color: #666; }
+
+.info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 16px 8px;
+  flex-shrink: 0;
+}
+
+.char-count { font-size: 12px; color: #666; }
+.error-msg { font-size: 12px; color: #ef5350; }
+
+.preview-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+}
+
+.qr-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  max-width: 90vw;
+}
+
+.qr-container.visible { display: flex; }
+
+.qr-container canvas,
+.qr-container img {
+  max-width: 100%;
+  height: auto !important;
+  width: auto !important;
+}
+
+.empty-state {
+  text-align: center;
+  color: #555;
+}
+
+.empty-state .icon { font-size: 64px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 0 16px 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: #4fc3f7;
+  color: #0f0f23;
+}
+.btn-primary:hover { background: #81d4fa; }
+.btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+.btn-secondary {
+  background: #333;
+  color: #e0e0e0;
+}
+.btn-secondary:hover { background: #444; }
+.btn-secondary:disabled { background: #222; color: #555; cursor: not-allowed; }
+
+/* Size selector */
+.size-selector {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.size-btn {
+  padding: 4px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.size-btn.active {
+  border-color: #4fc3f7;
+  color: #4fc3f7;
+  background: rgba(79, 195, 247, 0.1);
+}
+
+/* Dark mode toggle */
+.toggle-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.toggle-btn {
+  padding: 4px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+}
+.toggle-btn.active {
+  border-color: #4fc3f7;
+  color: #4fc3f7;
+}
+
+@media (min-width: 768px) {
+  .app {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>📱 QR Code</h1>
+  </header>
+
+  <div class="input-area">
+    <textarea id="input" placeholder="輸入任何內容：網址、文字、電話、WiFi密碼、任何東西..." autofocus></textarea>
+  </div>
+
+  <div class="info-bar">
+    <span class="char-count" id="charCount">0 字元</span>
+    <span class="error-msg" id="errorMsg"></span>
+  </div>
+
+  <div class="preview-area">
+    <div class="qr-container" id="qrContainer"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="icon">📲</div>
+      <p>輸入內容，QR Code 即時出現</p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="size-selector">
+      <button class="size-btn" data-size="256" onclick="setSize(256)">S</button>
+      <button class="size-btn active" data-size="384" onclick="setSize(384)">M</button>
+      <button class="size-btn" data-size="512" onclick="setSize(512)">L</button>
+      <button class="size-btn" data-size="768" onclick="setSize(768)">XL</button>
+    </div>
+    <button class="btn btn-primary" id="downloadBtn" onclick="downloadPng()" disabled>⬇ 下載</button>
+    <button class="btn btn-secondary" id="copyBtn" onclick="copyImage()" disabled>📋 複製</button>
+  </div>
+</div>
+
+<script>
+const input = document.getElementById('input');
+const qrContainer = document.getElementById('qrContainer');
+const emptyState = document.getElementById('emptyState');
+const charCount = document.getElementById('charCount');
+const errorMsg = document.getElementById('errorMsg');
+const downloadBtn = document.getElementById('downloadBtn');
+const copyBtn = document.getElementById('copyBtn');
+
+let currentSize = 384;
+let debounceTimer;
+
+// QR Code capacity limits (approximate)
+const MAX_CHARS = 2953;
+
+function generate() {
+  const text = input.value;
+  charCount.textContent = `${text.length} 字元`;
+  errorMsg.textContent = '';
+
+  if (!text.trim()) {
+    qrContainer.classList.remove('visible');
+    emptyState.style.display = '';
+    downloadBtn.disabled = true;
+    copyBtn.disabled = true;
+    return;
+  }
+
+  if (text.length > MAX_CHARS) {
+    errorMsg.textContent = `超過 QR Code 容量上限（${MAX_CHARS} 字元）`;
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  qrContainer.classList.add('visible');
+  qrContainer.innerHTML = '';
+
+  QRCode.toCanvas(text, {
+    width: currentSize,
+    margin: 2,
+    color: {
+      dark: '#000000',
+      light: '#ffffff'
+    },
+    errorCorrectionLevel: 'M'
+  }, function(err, canvas) {
+    if (err) {
+      errorMsg.textContent = '產生失敗：' + err.message;
+      return;
+    }
+    qrContainer.appendChild(canvas);
+    downloadBtn.disabled = false;
+    copyBtn.disabled = false;
+  });
+}
+
+function setSize(size) {
+  currentSize = size;
+  document.querySelectorAll('.size-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.size) === size);
+  });
+  if (input.value.trim()) generate();
+}
+
+function downloadPng() {
+  const canvas = qrContainer.querySelector('canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'qrcode.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function copyImage() {
+  const canvas = qrContainer.querySelector('canvas');
+  if (!canvas) return;
+  try {
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    copyBtn.textContent = '✅ 已複製';
+    setTimeout(() => copyBtn.textContent = '📋 複製', 1500);
+  } catch (e) {
+    errorMsg.textContent = '複製失敗，請改用下載';
+  }
+}
+
+// Live generation with debounce
+input.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(generate, 200);
+});
+
+// Auto-resize textarea
+input.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+});
+
+// Load saved
+const saved = localStorage.getItem('qr-content');
+if (saved) {
+  input.value = saved;
+  input.dispatchEvent(new Event('input'));
+}
+</script>
+</body>
+</html>
