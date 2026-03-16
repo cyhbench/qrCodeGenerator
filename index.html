@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Code Generator v2</title>
+<title>QR Code Generator v3</title>
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
 body {
@@ -14,85 +14,103 @@ body {
   min-height: 100vh;
 }
 .container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
-h1 { text-align: center; font-size: 24px; color: #1a1a2e; margin: 20px 0 8px; }
+h1 { text-align: center; font-size: 24px; color: #1a1a2e; margin: 20px 0 4px; }
+.version { text-align: center; color: #1976d2; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
 .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 24px; }
-.version { text-align: center; color: #ccc; font-size: 11px; margin-bottom: 16px; }
 
-#input {
+textarea {
   width: 100%; min-height: 120px; padding: 14px;
   border: 2px solid #ddd; border-radius: 8px; font-size: 15px;
   outline: none; resize: vertical; background: #fff; color: #222; box-sizing: border-box;
 }
-#input:focus { border-color: #1976d2; }
+textarea:focus { border-color: #1976d2; }
 
-#preview { margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#status { text-align: center; color: #888; font-size: 13px; margin: 8px 0; min-height: 20px; }
 
 #qrBox {
-  background: #fff; padding: 20px; border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: none;
+  text-align: center;
+  margin: 20px 0;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: none;
 }
-#qrBox canvas, #qrBox img { display: block; max-width: 100%; height: auto !important; }
 
-.empty { color: #aaa; font-size: 15px; text-align: center; padding: 40px 0; }
-#info { color: #888; font-size: 13px; text-align: center; }
+#qrBox canvas {
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+}
 
-.sizes { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
+.sizes { display: flex; gap: 6px; justify-content: center; margin: 16px 0; }
 .size-btn {
-  padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px;
+  padding: 8px 16px; border: 1px solid #ddd; border-radius: 6px;
   background: #fff; color: #555; font-size: 13px; cursor: pointer;
 }
 .size-btn.active { border-color: #1976d2; color: #1976d2; background: #e3f2fd; }
 
-.actions { display: flex; gap: 8px; margin-top: 12px; justify-content: center; }
-.btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.btn {
+  padding: 10px 24px; border: none; border-radius: 6px;
+  font-size: 14px; cursor: pointer; font-weight: 500;
+}
 .btn-primary { background: #1976d2; color: #fff; }
 .btn-primary:hover { background: #1565c0; }
-.btn-primary:disabled { background: #ccc; }
 .btn-secondary { background: #e0e0e0; color: #333; }
 .btn-secondary:hover { background: #d0d0d0; }
+
+.empty { color: #aaa; font-size: 15px; text-align: center; padding: 40px 0; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>📱 QR Code</h1>
+  <h1>📱 QR Code Generator</h1>
+  <div class="version">v3.0</div>
   <p class="subtitle">輸入任何內容，即時產生 QR Code</p>
-  <div class="version">v2.0</div>
 
   <textarea id="input" placeholder="輸入網址、文字、電話、任何內容..." autofocus></textarea>
-  <div id="info" style="margin-top:8px"></div>
+  <div id="status"></div>
 
-  <div id="preview">
-    <div class="empty" id="empty">📲 輸入內容後 QR Code 自動出現</div>
-    <div id="qrBox"><canvas id="qrCanvas"></canvas></div>
-    <div class="sizes" id="sizes" style="display:none">
-      <button class="size-btn" data-s="200" onclick="setSize(200)">S</button>
-      <button class="size-btn active" data-s="300" onclick="setSize(300)">M</button>
-      <button class="size-btn" data-s="400" onclick="setSize(400)">L</button>
-      <button class="size-btn" data-s="600" onclick="setSize(600)">XL</button>
-    </div>
-    <div class="actions" id="actions" style="display:none">
-      <button class="btn btn-primary" onclick="download()">⬇ 下載 PNG</button>
-      <button class="btn btn-secondary" onclick="copyImg()">📋 複製圖片</button>
-    </div>
+  <div class="empty" id="empty">📲 輸入內容後 QR Code 自動出現</div>
+
+  <div id="qrBox">
+    <canvas id="qrCanvas"></canvas>
+  </div>
+
+  <div class="sizes" id="sizes" style="display:none">
+    <button class="size-btn" data-s="200" onclick="setSize(200)">S</button>
+    <button class="size-btn active" data-s="300" onclick="setSize(300)">M</button>
+    <button class="size-btn" data-s="400" onclick="setSize(400)">L</button>
+    <button class="size-btn" data-s="600" onclick="setSize(600)">XL</button>
+  </div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn btn-primary" onclick="download()">⬇ 下載 PNG</button>
+    <button class="btn btn-secondary" onclick="copyImg()">📋 複製</button>
   </div>
 </div>
 
 <script>
+console.log('QRious loaded:', typeof QRious);
+
 const input = document.getElementById('input');
 const qrBox = document.getElementById('qrBox');
 const qrCanvas = document.getElementById('qrCanvas');
 const empty = document.getElementById('empty');
-const info = document.getElementById('info');
+const status = document.getElementById('status');
 const sizesDiv = document.getElementById('sizes');
 const actionsDiv = document.getElementById('actions');
 
 let qrSize = 300;
 let debounceTimer;
 
-// Initialize QRious
+// Init QRious on the canvas
 const qr = new QRious({
   element: qrCanvas,
+  value: '',
   size: qrSize,
   level: 'M',
   background: '#ffffff',
@@ -101,7 +119,7 @@ const qr = new QRious({
 
 function generate() {
   const text = input.value.trim();
-  info.textContent = input.value ? input.value.length + ' 字元' : '';
+  status.textContent = input.value ? input.value.length + ' 字元' : '';
 
   if (!text) {
     qrBox.style.display = 'none';
@@ -112,11 +130,18 @@ function generate() {
   }
 
   empty.style.display = 'none';
-  qrBox.style.display = '';
-  sizesDiv.style.display = '';
-  actionsDiv.style.display = '';
+  qrBox.style.display = 'block';
+  sizesDiv.style.display = 'flex';
+  actionsDiv.style.display = 'flex';
 
-  qr.set({ value: text, size: qrSize });
+  try {
+    qr.set({ value: text, size: qrSize });
+    status.textContent = '✅ 已產生 (' + qrCanvas.width + '×' + qrCanvas.height + ')';
+    console.log('QR generated, canvas size:', qrCanvas.width, qrCanvas.height);
+  } catch (e) {
+    status.textContent = '❌ 錯誤：' + e.message;
+    console.error('QR error:', e);
+  }
 }
 
 function setSize(s) {
@@ -135,15 +160,16 @@ function download() {
 }
 
 function copyImg() {
-  qrCanvas.toBlob(blob => {
-    navigator.clipboard.write([new ClipboardItem('image/png', blob)]).then(() => {
-      info.textContent = '✅ 已複製到剪貼簿';
-      setTimeout(() => { if (input.value.trim()) info.textContent = input.value.length + ' 字元'; }, 1500);
-    }).catch(() => { info.textContent = '複製失敗，請用下載'; });
+  qrCanvas.toBlob(function(blob) {
+    navigator.clipboard.write([new ClipboardItem('image/png', blob)]).then(function() {
+      status.textContent = '✅ 已複製到剪貼簿';
+    }).catch(function() {
+      status.textContent = '複製失敗，請用下載';
+    });
   });
 }
 
-input.addEventListener('input', () => {
+input.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(generate, 200);
 });
