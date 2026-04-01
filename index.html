@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Code Generator v3</title>
+<title>QR Code Generator</title>
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
 body {
@@ -62,13 +62,25 @@ textarea:focus { border-color: #1976d2; }
 .btn-secondary:hover { background: #d0d0d0; }
 
 .empty { color: #aaa; font-size: 15px; text-align: center; padding: 40px 0; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #1a1a1a; color: #e0e0e0; }
+  textarea { background: #2a2a2a; color: #e0e0e0; border-color: #444; }
+  textarea:focus { border-color: #42a5f5; }
+  #qrBox { background: #2a2a2a; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .size-btn { background: #2a2a2a; color: #aaa; border-color: #444; }
+  .size-btn.active { border-color: #42a5f5; color: #42a5f5; background: #1a2a3a; }
+  .btn-secondary { background: #444; color: #e0e0e0; }
+  .btn-secondary:hover { background: #555; }
+  h1 { color: #e0e0e0; }
+}
 </style>
 </head>
 <body>
 
 <div class="container">
   <h1>📱 QR Code Generator</h1>
-  <div class="version">v3.0</div>
+  <div class="version">v3.1</div>
   <p class="subtitle">輸入任何內容，即時產生 QR Code</p>
 
   <textarea id="input" placeholder="輸入網址、文字、電話、任何內容..." autofocus></textarea>
@@ -81,21 +93,19 @@ textarea:focus { border-color: #1976d2; }
   </div>
 
   <div class="sizes" id="sizes" style="display:none">
-    <button class="size-btn" data-s="200" onclick="setSize(200)">S</button>
-    <button class="size-btn active" data-s="300" onclick="setSize(300)">M</button>
-    <button class="size-btn" data-s="400" onclick="setSize(400)">L</button>
-    <button class="size-btn" data-s="600" onclick="setSize(600)">XL</button>
+    <button class="size-btn" data-s="200">S</button>
+    <button class="size-btn active" data-s="300">M</button>
+    <button class="size-btn" data-s="400">L</button>
+    <button class="size-btn" data-s="600">XL</button>
   </div>
 
   <div class="actions" id="actions" style="display:none">
-    <button class="btn btn-primary" onclick="download()">⬇ 下載 PNG</button>
-    <button class="btn btn-secondary" onclick="copyImg()">📋 複製</button>
+    <button class="btn btn-primary" id="btnDownload">⬇ 下載 PNG</button>
+    <button class="btn btn-secondary" id="btnCopy">📋 複製</button>
   </div>
 </div>
 
 <script>
-console.log('QRious loaded:', typeof QRious);
-
 const input = document.getElementById('input');
 const qrBox = document.getElementById('qrBox');
 const qrCanvas = document.getElementById('qrCanvas');
@@ -107,7 +117,6 @@ const actionsDiv = document.getElementById('actions');
 let qrSize = 300;
 let debounceTimer;
 
-// Init QRious on the canvas
 const qr = new QRious({
   element: qrCanvas,
   value: '',
@@ -137,10 +146,8 @@ function generate() {
   try {
     qr.set({ value: text, size: qrSize });
     status.textContent = '✅ 已產生 (' + qrCanvas.width + '×' + qrCanvas.height + ')';
-    console.log('QR generated, canvas size:', qrCanvas.width, qrCanvas.height);
   } catch (e) {
     status.textContent = '❌ 錯誤：' + e.message;
-    console.error('QR error:', e);
   }
 }
 
@@ -161,7 +168,7 @@ function download() {
 
 function copyImg() {
   qrCanvas.toBlob(function(blob) {
-    navigator.clipboard.write([new ClipboardItem('image/png', blob)]).then(function() {
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
       status.textContent = '✅ 已複製到剪貼簿';
     }).catch(function() {
       status.textContent = '複製失敗，請用下載';
@@ -170,14 +177,19 @@ function copyImg() {
 }
 
 input.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 200) + 'px';
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(generate, 200);
 });
 
-input.addEventListener('input', function() {
-  this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+document.getElementById('sizes').addEventListener('click', function(e) {
+  const btn = e.target.closest('.size-btn');
+  if (btn) setSize(parseInt(btn.dataset.s));
 });
+
+document.getElementById('btnDownload').addEventListener('click', download);
+document.getElementById('btnCopy').addEventListener('click', copyImg);
 </script>
 </body>
 </html>
