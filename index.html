@@ -80,7 +80,7 @@ textarea:focus { border-color: #1976d2; }
 
 <div class="container">
   <h1>📱 QR Code Generator</h1>
-  <div class="version">v3.1</div>
+  <div class="version">v3.2</div>
   <p class="subtitle">輸入任何內容，即時產生 QR Code</p>
 
   <textarea id="input" placeholder="輸入網址、文字、電話、任何內容..." autofocus></textarea>
@@ -126,27 +126,41 @@ const qr = new QRious({
   foreground: '#000000'
 });
 
+// level M、byte 模式的容量上限；QRious 超過時不報錯，會默默截斷
+const MAX_BYTES = 2331;
+
+function showQr(on) {
+  qrBox.style.display = on ? 'block' : 'none';
+  sizesDiv.style.display = on ? 'flex' : 'none';
+  actionsDiv.style.display = on ? 'flex' : 'none';
+}
+
 function generate() {
   const text = input.value.trim();
   status.textContent = input.value ? input.value.length + ' 字元' : '';
+  empty.style.display = text ? 'none' : '';
 
   if (!text) {
-    qrBox.style.display = 'none';
-    empty.style.display = '';
-    sizesDiv.style.display = 'none';
-    actionsDiv.style.display = 'none';
+    showQr(false);
     return;
   }
 
-  empty.style.display = 'none';
-  qrBox.style.display = 'block';
-  sizesDiv.style.display = 'flex';
-  actionsDiv.style.display = 'flex';
+  // QRious 把每個字元當 1 byte 寫入，中文、emoji 會壞掉；先轉成 UTF-8 bytes 再交給它
+  const bytes = Array.from(new TextEncoder().encode(text), b => String.fromCharCode(b)).join('');
+  if (bytes.length > MAX_BYTES) {
+    // 隱藏舊的 QR Code，避免下載到不是目前內容的圖
+    showQr(false);
+    status.textContent = '❌ 內容太長：' + bytes.length + ' bytes，上限 ' + MAX_BYTES + ' bytes';
+    return;
+  }
 
   try {
-    qr.set({ value: text, size: qrSize });
+    // padding 佔邊長 14%，保證四周至少 4 格模組的白邊（QR 規格要求，深色背景上才掃得到）
+    qr.set({ value: bytes, size: qrSize, padding: Math.round(qrSize * 0.14) });
+    showQr(true);
     status.textContent = '✅ 已產生 (' + qrCanvas.width + '×' + qrCanvas.height + ')';
   } catch (e) {
+    showQr(false);
     status.textContent = '❌ 錯誤：' + e.message;
   }
 }
